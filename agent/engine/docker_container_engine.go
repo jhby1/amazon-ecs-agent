@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -377,7 +378,19 @@ func (dg *dockerGoClient) createContainer(ctx context.Context, config *docker.Co
 	if err != nil {
 		return DockerContainerMetadata{Error: CannotGetDockerClientError{version: dg.version, err: err}}
 	}
+	seelog.Info("This is createContainer")
+	seelog.Infof("CreateContainer - Using logger: %s", hostConfig.LogConfig.Type)
+	seelog.Infof("CreateContainer - Config: %v", hostConfig.LogConfig.Config)
 
+	awsLogsGroup := os.Getenv("ECS_AGENT_AWSLOGS_GROUP")
+
+	seelog.Infof("CreateContainer - awslogs-group: %s", hostConfig.LogConfig.Config["awslogs-group"])
+	seelog.Infof("CreateContainer - ECS_AGENT_AWSLOGS_GROUP: %s", awsLogsGroup)
+
+	if hostConfig.LogConfig.Type == "awslogs" && hostConfig.LogConfig.Config["awslogs-group"] == "$default" && awsLogsGroup != "" {
+		seelog.Infof("CreateContainer - Setting group to: %s", awsLogsGroup)
+		hostConfig.LogConfig.Config["awslogs-group"] = awsLogsGroup
+	}
 	containerOptions := docker.CreateContainerOptions{
 		Config:     config,
 		HostConfig: hostConfig,

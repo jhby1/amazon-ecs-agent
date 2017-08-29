@@ -382,14 +382,15 @@ func (dg *dockerGoClient) createContainer(ctx context.Context, config *docker.Co
 	seelog.Infof("CreateContainer - Using logger: %s", hostConfig.LogConfig.Type)
 	seelog.Infof("CreateContainer - Config: %v", hostConfig.LogConfig.Config)
 
-	awsLogsGroup := os.Getenv("ECS_AGENT_AWSLOGS_GROUP")
+	defaultLogGroup := os.Getenv("ECS_AGENT_AWSLOGS_GROUP")
 
 	seelog.Infof("CreateContainer - awslogs-group: %s", hostConfig.LogConfig.Config["awslogs-group"])
-	seelog.Infof("CreateContainer - ECS_AGENT_AWSLOGS_GROUP: %s", awsLogsGroup)
+	seelog.Infof("CreateContainer - ECS_AGENT_AWSLOGS_GROUP: %s", defaultLogGroup)
 
-	if hostConfig.LogConfig.Type == "awslogs" && hostConfig.LogConfig.Config["awslogs-group"] == "$default" && awsLogsGroup != "" {
-		seelog.Infof("CreateContainer - Setting group to: %s", awsLogsGroup)
-		hostConfig.LogConfig.Config["awslogs-group"] = awsLogsGroup
+	awsLogsGroup := hostConfig.LogConfig.Config["awslogs-group"]
+	if hostConfig.LogConfig.Type == "awslogs" && defaultLogGroup != "" && (awsLogsGroup == "$default" || awsLogsGroup == "default")  {
+		seelog.Infof("CreateContainer - Setting group to: %s", defaultLogGroup)
+		hostConfig.LogConfig.Config["awslogs-group"] = defaultLogGroup
 	}
 	containerOptions := docker.CreateContainerOptions{
 		Config:     config,
